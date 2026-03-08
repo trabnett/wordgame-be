@@ -1,7 +1,9 @@
 from datetime import timedelta
 
+import phonenumbers
 from django.utils import timezone
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -17,21 +19,26 @@ class WelcomeView(APIView):
 class PhoneLoginView(APIView):
     def post(self, request):
         phone_number = request.data.get('phone_number')
+        print('>>>>>>>>>>.THIS IS PHONE NUMBER')
         if not phone_number:
             return Response(
                 {"success": False, "message": "Phone number is required."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Strip non-digit characters and normalize
-        digits = ''.join(c for c in phone_number if c.isdigit())
-        candidates = [digits, f'+{digits}', f'+1{digits}']
+        # Parse the phone number, defaulting to US if no country code
+        try:
+            parsed = phonenumbers.parse(phone_number, 'US')
+            normalized = phonenumbers.format_number(
+                parsed, phonenumbers.PhoneNumberFormat.E164
+            )
+        except phonenumbers.NumberParseException:
+            return Response(
+                {"success": False, "message": "Invalid phone number."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
-        user = None
-        for candidate in candidates:
-            user = User.objects.filter(phone_number=candidate).first()
-            if user:
-                break
+        user = User.objects.filter(phone_number=normalized).first()
 
         if not user:
             return Response(
@@ -63,5 +70,24 @@ class PhoneLoginView(APIView):
             "user": {
                 "id": user.id,
                 "username": user.username,
+                "first_name": user.first_name,
+            },
+        })
+
+
+class UserProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        return Response({
+            "success": True,
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "email": user.email,
+                "phone_number": str(user.phone_number) if user.phone_number else None,
             },
         })
