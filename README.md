@@ -12,10 +12,62 @@ A Django REST Framework backend for WordGame — a Wordle-meets-Scrabble multipl
 ## Prerequisites
 
 - Python 3.11+
-- PostgreSQL 14+ (installed and running)
+- PostgreSQL 14+ (installed and running) — or Docker
 - A Twilio account (for SMS features — not needed for local dev)
 
-## Getting Started
+## Getting Started (Docker)
+
+The quickest way to get running. Docker Compose spins up two containers:
+
+- **db** — PostgreSQL 16, mapped to host port `5433` (to avoid conflicts with local Postgres)
+- **backend** — Django app on port `8181`
+
+### 1. Configure environment
+
+```bash
+cd wordgame-be
+cp .env.example .env
+```
+
+### 2. Build and run
+
+```bash
+docker compose up --build
+```
+
+The `entrypoint.sh` script handles startup automatically:
+1. Waits for PostgreSQL to be ready
+2. Runs `manage.py migrate`
+3. Starts the Django dev server on `0.0.0.0:8181`
+
+The API will be available at `http://localhost:8181`.
+
+### Create a superuser (optional)
+
+```bash
+docker compose exec backend python manage.py createsuperuser
+```
+
+Then log in at `http://localhost:8181/admin/`.
+
+### Connect to the database directly
+
+```bash
+psql -h localhost -p 5433 -U wordgame wordgame
+```
+
+### Common commands
+
+```bash
+docker compose up --build     # Build and start
+docker compose up -d          # Start in background
+docker compose down           # Stop containers
+docker compose down -v        # Stop and wipe database
+docker compose logs -f        # Tail logs
+docker compose exec backend python manage.py <command>  # Run manage.py commands
+```
+
+## Getting Started (Local venv)
 
 ### 1. Create and activate a virtual environment
 
@@ -66,7 +118,7 @@ Key values to set:
 | `DJANGO_SECRET_KEY` | Django secret key | Change for production |
 | `DJANGO_DEBUG` | Enable debug mode | `True` |
 | `DB_NAME` | PostgreSQL database name | `wordgame` |
-| `DB_USER` | PostgreSQL user | Your macOS username |
+| `DB_USER` | PostgreSQL user | `wordgame` |
 | `DB_PASSWORD` | PostgreSQL password | Empty for local Homebrew |
 | `DB_HOST` | Database host | `localhost` |
 | `DB_PORT` | Database port | `5432` |
@@ -108,5 +160,8 @@ wordgame-be/
 │       └── urls.py
 ├── .env             # Environment variables (not committed)
 ├── requirements.txt
+├── docker-compose.yml
+├── Dockerfile
+├── entrypoint.sh    # Waits for Postgres, runs migrations, starts server
 └── manage.py
 ```

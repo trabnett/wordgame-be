@@ -4,4 +4,4 @@ from rest_framework.views import APIView
 
 class WelcomeView(APIView):
     def get(self, request):
-        return Response({"success": True, "message": "welcome"})
+        return Response({"success": True, "message": "welcome message"})
