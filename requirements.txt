@@ -1,0 +1,21 @@
+# Core
+Django>=5.1,<5.2
+djangorestframework>=3.15,<3.16
+django-cors-headers>=4.6,<4.7
+
+# Auth
+djangorestframework-simplejwt>=5.4,<5.5
+django-phonenumber-field>=8.0,<8.1
+phonenumbers>=8.13,<8.14
+
+# Messaging
+twilio>=9.4,<9.5
+
+# Database
+psycopg[binary]>=3.2,<3.3
+
+# AWS
+boto3>=1.35,<1.36
+
+# Environment & Config
+python-dotenv>=1.0,<1.1
