@@ -88,13 +88,22 @@ class GameConsumer(AsyncWebsocketConsumer):
                 slot_index=data['slot_index'],
                 hand_index=data['hand_index'],
             )
-            if result:
+            if result and result['type'] == 'game_over':
                 await self.channel_layer.group_send(
                     self.game_group,
                     {
                         'type': 'game_over',
                         'winner_id': result['winner_id'],
                         'board_state': result['board_state'],
+                    },
+                )
+            elif result and result['type'] == 'tile_placed':
+                await self.channel_layer.group_send(
+                    self.game_group,
+                    {
+                        'type': 'game_update',
+                        'board_state': result['board_state'],
+                        'hand_letters': result['hand_letters'],
                     },
                 )
 
@@ -107,7 +116,11 @@ class GameConsumer(AsyncWebsocketConsumer):
 
     async def game_update(self, event):
         """Forward game state updates to client."""
-        await self.send(text_data=json.dumps(event))
+        await self.send(text_data=json.dumps({
+            'type': 'game_update',
+            'board_state': event['board_state'],
+            'hand_letters': event['hand_letters'],
+        }))
 
     async def game_over(self, event):
         """Broadcast game over with personalized winner flag."""
@@ -154,13 +167,25 @@ class GameConsumer(AsyncWebsocketConsumer):
             game.board_state[slot_index] = game.hand_letters[hand_index]
             game.hand_letters[hand_index] = ''
 
-            # First placement wins
-            winner = User.objects.get(id=self.user_id)
-            game.winner = winner
-            game.status = Game.STATUS_COMPLETED
-            game.save(update_fields=['board_state', 'hand_letters', 'winner', 'status'])
+            # Count how many tiles are on the board
+            placed_count = sum(1 for s in game.board_state if s is not None)
 
-            return {
-                'winner_id': self.user_id,
-                'board_state': game.board_state,
-            }
+            if placed_count >= 2:
+                # Second placement wins
+                winner = User.objects.get(id=self.user_id)
+                game.winner = winner
+                game.status = Game.STATUS_COMPLETED
+                game.save(update_fields=['board_state', 'hand_letters', 'winner', 'status'])
+                return {
+                    'type': 'game_over',
+                    'winner_id': self.user_id,
+                    'board_state': game.board_state,
+                }
+            else:
+                # First placement — broadcast updated board to both players
+                game.save(update_fields=['board_state', 'hand_letters'])
+                return {
+                    'type': 'tile_placed',
+                    'board_state': game.board_state,
+                    'hand_letters': game.hand_letters,
+                }
