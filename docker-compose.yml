@@ -10,6 +10,11 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
   backend:
     build: .
     ports:
@@ -19,8 +24,10 @@ services:
     environment:
       DB_HOST: db
       DB_PASSWORD: postgres
+      REDIS_HOST: redis
     depends_on:
       - db
+      - redis
 
 volumes:
   pgdata:

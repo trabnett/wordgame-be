@@ -1,3 +1,5 @@
+import random
+
 from django.conf import settings
 from django.db import models
 
@@ -36,6 +38,8 @@ class Game(models.Model):
         choices=STATUS_CHOICES,
         default=STATUS_WAITING,
     )
+    board_state = models.JSONField(default=list)
+    hand_letters = models.JSONField(default=list)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -48,3 +52,8 @@ class Game(models.Model):
 
     def __str__(self):
         return f'Game {self.id}: {self.player_one} vs {self.player_two}'
+
+    def initialize_game_state(self):
+        letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+        self.board_state = [None] * 5
+        self.hand_letters = [random.choice(letters) for _ in range(3)]
