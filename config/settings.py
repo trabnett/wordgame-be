@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'phonenumber_field',
     'authentication',
+    'game',
 ]
 
 MIDDLEWARE = [

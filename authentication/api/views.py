@@ -26,9 +26,12 @@ class PhoneLoginView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Parse the phone number, defaulting to US if no country code
+        # Prepend '+' if missing so international numbers are parsed correctly
+        if not phone_number.startswith('+'):
+            phone_number = f'+{phone_number}'
+
         try:
-            parsed = phonenumbers.parse(phone_number, 'US')
+            parsed = phonenumbers.parse(phone_number, None)
             normalized = phonenumbers.format_number(
                 parsed, phonenumbers.PhoneNumberFormat.E164
             )
