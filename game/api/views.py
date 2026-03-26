@@ -61,6 +61,10 @@ class CreateGameView(APIView):
             status=Game.STATUS_IN_PROGRESS if player_two else Game.STATUS_WAITING,
         )
 
+        if player_two:
+            game.initialize_game_state()
+            game.save(update_fields=Game.GAME_STATE_FIELDS)
+
         if game.status == Game.STATUS_WAITING:
             notify_lobby()
 
@@ -96,7 +100,7 @@ class JoinGameView(APIView):
         game.player_two = request.user
         game.status = Game.STATUS_IN_PROGRESS
         game.initialize_game_state()
-        game.save(update_fields=['player_two', 'status', 'board_state', 'hand_letters'])
+        game.save(update_fields=['player_two', 'status'] + Game.GAME_STATE_FIELDS)
 
         notify_lobby()
 

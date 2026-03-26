@@ -1,7 +1,7 @@
-import random
-
 from django.conf import settings
 from django.db import models
+
+STARTING_DECK = sorted(list('ACDEEHILNOPRSTU'))  # 15 letters each
 
 
 class Game(models.Model):
@@ -33,14 +33,30 @@ class Game(models.Model):
         null=True,
         blank=True,
     )
+    current_turn = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name='current_turn_games',
+        null=True,
+        blank=True,
+    )
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
         default=STATUS_WAITING,
     )
     board_state = models.JSONField(default=list)
-    hand_letters = models.JSONField(default=list)
+    player_one_hand = models.JSONField(default=list)
+    player_two_hand = models.JSONField(default=list)
+    player_one_pile = models.JSONField(default=list)
+    player_two_pile = models.JSONField(default=list)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    GAME_STATE_FIELDS = [
+        'board_state', 'player_one_hand', 'player_two_hand',
+        'player_one_pile', 'player_two_pile', 'current_turn',
+        'status', 'winner',
+    ]
 
     class Meta:
         constraints = [
@@ -54,6 +70,9 @@ class Game(models.Model):
         return f'Game {self.id}: {self.player_one} vs {self.player_two}'
 
     def initialize_game_state(self):
-        letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-        self.board_state = [None] * 5
-        self.hand_letters = [random.choice(letters) for _ in range(3)]
+        self.board_state = []
+        self.player_one_hand = STARTING_DECK.copy()
+        self.player_two_hand = STARTING_DECK.copy()
+        self.player_one_pile = []
+        self.player_two_pile = []
+        self.current_turn = self.player_one
