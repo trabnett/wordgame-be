@@ -6,6 +6,7 @@ from . import views
 urlpatterns = [
     re_path(r'^welcome/?$', views.WelcomeView.as_view(), name='api-welcome'),
     re_path(r'^login/?$', views.PhoneLoginView.as_view(), name='api-phone-login'),
+    re_path(r'^login/email/?$', views.EmailLoginView.as_view(), name='api-email-login'),
     re_path(r'^register/?$', views.RegisterView.as_view(), name='api-register'),
     re_path(r'^user/?$', views.UserProfileView.as_view(), name='api-user-profile'),
     re_path(r'^token/refresh/?$', TokenRefreshView.as_view(), name='api-token-refresh'),
