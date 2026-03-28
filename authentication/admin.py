@@ -5,7 +5,8 @@ from .models import User
 
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
-    list_display = ('username', 'email', 'phone_number', 'is_staff')
+    list_display = ('id', 'username', 'email', 'phone_number', 'is_staff')
+    ordering = ('-id',)
     fieldsets = UserAdmin.fieldsets + (
         ('Phone', {'fields': ('phone_number',)}),
     )
