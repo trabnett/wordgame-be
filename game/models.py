@@ -1,7 +1,9 @@
+import random
+
 from django.conf import settings
 from django.db import models
 
-STARTING_DECK = sorted(list('ACDEEHILNOPRSTU'))  # 15 letters each
+FULL_DECK = list('AABCDEEFGHIIJKLLMNNOOPQRRSSTTUVWXYZ')
 
 
 class Game(models.Model):
@@ -50,12 +52,14 @@ class Game(models.Model):
     player_two_hand = models.JSONField(default=list)
     player_one_pile = models.JSONField(default=list)
     player_two_pile = models.JSONField(default=list)
+    player_one_deck = models.JSONField(default=list)
+    player_two_deck = models.JSONField(default=list)
     created_at = models.DateTimeField(auto_now_add=True)
 
     GAME_STATE_FIELDS = [
         'board_state', 'player_one_hand', 'player_two_hand',
-        'player_one_pile', 'player_two_pile', 'current_turn',
-        'status', 'winner',
+        'player_one_pile', 'player_two_pile', 'player_one_deck',
+        'player_two_deck', 'current_turn', 'status', 'winner',
     ]
 
     class Meta:
@@ -70,9 +74,18 @@ class Game(models.Model):
         return f'Game {self.id}: {self.player_one} vs {self.player_two}'
 
     def initialize_game_state(self):
-        self.board_state = []
-        self.player_one_hand = STARTING_DECK.copy()
-        self.player_two_hand = STARTING_DECK.copy()
+        self.board_state = ['E']
+
+        p1_deck = FULL_DECK.copy()
+        random.shuffle(p1_deck)
+        self.player_one_hand = sorted(p1_deck[:5])
+        self.player_one_deck = p1_deck[5:]
+
+        p2_deck = FULL_DECK.copy()
+        random.shuffle(p2_deck)
+        self.player_two_hand = sorted(p2_deck[:5])
+        self.player_two_deck = p2_deck[5:]
+
         self.player_one_pile = []
         self.player_two_pile = []
         self.current_turn = self.player_one
