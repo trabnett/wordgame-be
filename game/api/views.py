@@ -1,3 +1,5 @@
+import os
+
 import phonenumbers
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
@@ -8,6 +10,7 @@ from rest_framework.views import APIView
 
 from authentication.models import User
 from game.models import Game
+from services.twilio.twilio_service import TwilioService
 
 
 def notify_lobby():
@@ -27,12 +30,8 @@ class CreateGameView(APIView):
         player_two = None
 
         if phone_number:
-            # Normalize the phone number
-            if not phone_number.startswith('+'):
-                phone_number = f'+{phone_number}'
-
             try:
-                parsed = phonenumbers.parse(phone_number, None)
+                parsed = phonenumbers.parse(phone_number, 'US')
                 normalized = phonenumbers.format_number(
                     parsed, phonenumbers.PhoneNumberFormat.E164
                 )
@@ -43,13 +42,8 @@ class CreateGameView(APIView):
                 )
 
             player_two = User.objects.filter(phone_number=normalized).first()
-            if not player_two:
-                return Response(
-                    {"success": False, "message": "No user found with that phone number."},
-                    status=status.HTTP_404_NOT_FOUND,
-                )
 
-            if player_two == request.user:
+            if player_two and player_two == request.user:
                 return Response(
                     {"success": False, "message": "You can't invite yourself."},
                     status=status.HTTP_400_BAD_REQUEST,
@@ -57,16 +51,26 @@ class CreateGameView(APIView):
 
         game = Game.objects.create(
             player_one=request.user,
-            player_two=player_two,
-            status=Game.STATUS_IN_PROGRESS if player_two else Game.STATUS_WAITING,
+            status=Game.STATUS_WAITING,
         )
 
-        if player_two:
-            game.initialize_game_state()
-            game.save(update_fields=Game.GAME_STATE_FIELDS)
+        notify_lobby()
 
-        if game.status == Game.STATUS_WAITING:
-            notify_lobby()
+        if phone_number:
+            try:
+                twilio = TwilioService()
+                base_url = os.getenv('FE_BASE_URL', 'http://35.183.28.89')
+                game_path = f'/waiting/{game.id}'
+                if player_two:
+                    link = f'{base_url}{game_path}'
+                else:
+                    link = f'{base_url}/login?next={game_path}&phone={normalized}'
+                twilio.send_message(
+                    normalized,
+                    f"A friend has invited you to play Maranga! Join here: {link}",
+                )
+            except Exception:
+                pass
 
         return Response({
             "success": True,

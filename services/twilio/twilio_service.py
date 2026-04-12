@@ -19,6 +19,7 @@ class TwilioService:
                 from_=self.from_number,
                 to=number,
             )
+            logger.info("SMS sent successfully to %s", number)
             return True
         except Exception as e:
             logger.error("Failed to send SMS to %s: %s", number, e)
